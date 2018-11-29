@@ -19,7 +19,7 @@
 """This will send all the GitHub webhooks to a Kafka topic."""
 
 import os
-import asyncio
+import hmac
 import logging
 import json
 from http import HTTPStatus
@@ -28,12 +28,13 @@ from http import HTTPStatus
 import daiquiri
 import kafka
 from kafka import KafkaProducer
-from flask import Flask, Response, jsonify, make_response
+from flask import Flask, Response, jsonify, make_response, request, current_app
 
 __version__ = "0.1.0-dev"
 
 
-DEBUG = os.getenv("DEBUG", True)
+DEBUG = os.getenv("DEBUG", False)
+GITHUB_WEBHOOK_TOPIC_NAME = "cyborg_regidores_github"
 
 daiquiri.setup()
 _LOGGER = daiquiri.getLogger("webhook2kafka")
@@ -54,7 +55,7 @@ def add_app_version(response):
 
 @app.route("/")
 def root():
-    return "hello"
+    return "This service is for Bots only!"
 
 
 @app.route("/healthz")
@@ -70,12 +71,29 @@ def healthz():
 
 
 @app.route("/github", methods=["POST"])
-def send_webhook_to_topic():
+def send_github_webhook_to_topic():
+    """Entry point for github webhook."""
     global producer
     resp = Response()
+    payload = None
     status_code = HTTPStatus.OK
 
-    # TODO check payload signature
+    signature = request.headers.get("X-Hub-Signature")
+    sha, signature = signature.split("=")
+
+    secret = str.encode(current_app.config.get("GITHUB_WEBHOOK_SECRET"))
+
+    hashhex = hmac.new(secret, request.data, digestmod="sha1").hexdigest()
+
+    if hmac.compare_digest(hashhex, signature):
+        payload = request.json
+    else:
+        _LOGGER.error(f"Webhook secret mismatch: me: {hashhex} != them: {signature}")
+        return
+
+    if payload is None:
+        _LOGGER.error("GitHub webhook payload was empty")
+        return resp, HTTPStatus.INTERNAL_SERVER_ERROR
 
     if producer is None:
         _LOGGER.debug("KafkaProducer was not connected, trying to reconnect...")
@@ -85,6 +103,9 @@ def send_webhook_to_topic():
                 acks=1,  # Wait for leader to write the record to its local log only.
                 compression_type="gzip",
                 value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+                security_protocol="SSL",
+                ssl_check_hostname=False,
+                ssl_cafile="conf/ca.pem",
             )
         except kafka.errors.NoBrokersAvailable as excptn:
             _LOGGER.debug("while trying to reconnect KafkaProducer: we failed...")
@@ -92,16 +113,13 @@ def send_webhook_to_topic():
             return resp, HTTPStatus.INTERNAL_SERVER_ERROR
 
     try:
-        future = producer.send("github", {"data": "another_message"})
+        future = producer.send(GITHUB_WEBHOOK_TOPIC_NAME, payload)
         result = future.get(timeout=6)
         _LOGGER.debug(result)
     except AttributeError as excptn:
         _LOGGER.debug(excptn)
         status_code = HTTPStatus.INTERNAL_SERVER_ERROR
-    except (
-        kafka.errors.NotLeaderForPartitionError,
-        kafka.errors.KafkaTimeoutError,
-    ) as excptn:
+    except (kafka.errors.NotLeaderForPartitionError, kafka.errors.KafkaTimeoutError) as excptn:
         _LOGGER.error(excptn)
         producer.close()
         producer = None
@@ -115,14 +133,20 @@ if __name__ == "__main__":
     _LOGGER.info(f"Cyborg Regidores webhook2kafka v{__version__} started.")
     _LOGGER.debug("DEBUG mode is enabled!")
 
+    app.config["GITHUB_WEBHOOK_SECRET"] = os.environ.get("GITHUB_WEBHOOK_SECRET")
+
     try:
         producer = KafkaProducer(
             bootstrap_servers=_KAFAK_BOOTSTRAP_SERVERS,
             acks=1,  # Wait for leader to write the record to its local log only.
             compression_type="gzip",
             value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+            security_protocol="SSL",
+            ssl_check_hostname=False,
+            ssl_cafile="conf/ca.pem",
         )
     except kafka.errors.NoBrokersAvailable as excptn:
         _LOGGER.error(excptn)
 
-    app.run(port=8080, debug=DEBUG)
+    _LOGGER.info(f"running Flask application now...")
+    app.run(host="0.0.0.0", port=8080, debug=DEBUG)
