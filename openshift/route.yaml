@@ -1,0 +1,11 @@
+kind: Route
+apiVersion: v1
+metadata:
+  name: webhook2kafka
+  labels:
+    app: cyborg-regidores
+    component: webhook2kafka
+spec:
+  to:
+    kind: Service
+    name: webhook2kafka

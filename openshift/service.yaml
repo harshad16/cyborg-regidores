@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: cyborg-regidores
+    component: webhook2kafka
+  name: webhook2kafka
+spec:
+  ports:
+  - name: 8080-tcp
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: cyborg-regidores
+    component: webhook2kafka
+    deploymentconfig: webhook2kafka

@@ -1,0 +1,32 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  labels:
+    app: cyborg-regidores
+    component: webhook2kafka
+  name: webhook2kafka
+spec:
+  failedBuildsHistoryLimit: 5
+  output:
+    to:
+      kind: ImageStreamTag
+      name: webhook2kafka:latest
+  resources: {}
+  source:
+    git:
+      uri: https://github.com/goern/cyborg-regidores.git
+    type: Git
+  strategy:
+    type: Source
+    sourceStrategy:
+      from:
+        kind: ImageStreamTag
+        name: python-36-centos7:latest
+      env:
+        - name: ENABLE_PIPENV
+          value: '1'
+        - name: UPGRADE_PIP_TO_LATEST
+          value: '1'
+  successfulBuildsHistoryLimit: 2
+  triggers:
+    - type: ConfigChange

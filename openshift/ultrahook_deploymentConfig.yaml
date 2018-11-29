@@ -1,0 +1,55 @@
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    app: cyborg-regidores
+    component: ultrahook
+    instance: ultrahook-cyborg-regidores
+  name: ultrahook-cyborg-regidores
+spec:
+  replicas: 1
+  selector:
+    app: ultrahook
+    deploymentconfig: ultrahook-cyborg-regidores
+    instance: ultrahook-cyborg-regidores
+  template:
+    metadata:
+      labels:
+        app: ultrahook
+        deploymentconfig: ultrahook-cyborg-regidores
+        instance: ultrahook-cyborg-regidores
+    spec:
+      containers:
+        - env:
+            - name: ULTRAHOOK_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: api.key
+                  name: ultrahook
+            - name: ULTRAHOOK_SUBDOMAIN
+              value: cyborg-regidores
+            - name: ULTRAHOOK_DESTINATION
+              value: >-
+                http://webhook2kafka-aicoe-prod-bots.cloud.paas.upshift.redhat.com/
+          image: docker-registry.default.svc:5000/aicoe/ultrahook
+          name: ultrahook-cyborg-regidores
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          resources:
+            limits:
+              memory: 50Mi
+  test: false
+  triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+          - ultrahook-cyborg-regidores
+        from:
+          kind: ImageStreamTag
+          name: 'ultrahook:latest'
+          namespace: aicoe
+        lastTriggeredImage: >-
+          docker-registry.default.svc:5000/aicoe/ultrahook@sha256:9d8a672ed9da9749c5aabd764a83383a23b2713f7660afbaabff6890680e9bb9
+      type: ImageChange
