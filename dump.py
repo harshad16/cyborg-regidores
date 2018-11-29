@@ -45,14 +45,16 @@ if __name__ == "__main__":
     _LOGGER.info(f"Cyborg Regidores dump v{__version__}.")
     _LOGGER.debug("DEBUG mode is enabled!")
 
+    # let's get all that we got...
     consumer = KafkaConsumer(
         GITHUB_WEBHOOK_TOPIC_NAME,
         bootstrap_servers=_KAFAK_BOOTSTRAP_SERVERS,
-        group_id="dump_group",
         value_deserializer=lambda v: json.loads(v),
         security_protocol="SSL",
         ssl_check_hostname=False,
         ssl_cafile="conf/ca.pem",
+        group_id=None,
+        auto_offset_reset="earliest",
     )
 
     for msg in consumer:
