@@ -27,12 +27,18 @@ import daiquiri
 import kafka
 from kafka import KafkaConsumer
 
-
-__version__ = "0.1.0-dev"
+from cyborg_regidores import __version__ as cyborg_regidores_version
+from cyborg_regidores.topic_names import (
+    GITHUB_WEBHOOK_TOPIC_NAME,
+    GITLAB_WEBHOOK_TOPIC_NAME,
+    JIRA_WEBHOOK_TOPIC_NAME,
+    TRELLO_WEBHOOK_TOPIC_NAME,
+    GOOGLE_CHATBOT_TOPIC_NAME,
+)
 
 
 DEBUG = os.getenv("DEBUG", True)
-GITHUB_WEBHOOK_TOPIC_NAME = "cyborg_regidores_github"
+
 
 daiquiri.setup()
 _LOGGER = daiquiri.getLogger("webhook2kafka")
@@ -42,12 +48,12 @@ _KAFAK_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"
 
 
 if __name__ == "__main__":
-    _LOGGER.info(f"Cyborg Regidores dump v{__version__}.")
+    _LOGGER.info(f"Cyborg Regidores dump v{cyborg_regidores_version}.")
     _LOGGER.debug("DEBUG mode is enabled!")
 
     # let's get all that we got...
     consumer = KafkaConsumer(
-        GITHUB_WEBHOOK_TOPIC_NAME,
+        GITLAB_WEBHOOK_TOPIC_NAME,
         bootstrap_servers=_KAFAK_BOOTSTRAP_SERVERS,
         value_deserializer=lambda v: json.loads(v),
         security_protocol="SSL",
@@ -58,4 +64,4 @@ if __name__ == "__main__":
     )
 
     for msg in consumer:
-        print(msg)
+        print(json.dumps(msg.value))
