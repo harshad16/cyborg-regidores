@@ -22,6 +22,7 @@ import os
 import hmac
 import logging
 import json
+import sys
 from http import HTTPStatus
 
 
@@ -29,6 +30,7 @@ import daiquiri
 import kafka
 from kafka import KafkaProducer
 from flask import Flask, Response, jsonify, make_response, request, current_app
+from prometheus_flask_exporter import PrometheusMetrics
 
 from cyborg_regidores import __version__ as cyborg_regidores_version
 from cyborg_regidores.topic_names import (
@@ -38,6 +40,7 @@ from cyborg_regidores.topic_names import (
     TRELLO_WEBHOOK_TOPIC_NAME,
     GOOGLE_CHATBOT_TOPIC_NAME,
 )
+
 
 DEBUG = os.getenv("DEBUG", False)
 
@@ -50,6 +53,9 @@ _KAFAK_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"
 
 
 app = Flask(__name__)
+metrics = PrometheusMetrics(app)
+metrics.info("cyborg_regidores_webhook2kafka_info", "Cyborg Regidores webhook2kafka", version=cyborg_regidores_version)
+
 producer = None
 
 
@@ -65,6 +71,7 @@ def root():
 
 
 @app.route("/healthz")
+@metrics.do_not_track()
 def healthz():
     status_code = HTTPStatus.OK
     health = {"version": cyborg_regidores_version}

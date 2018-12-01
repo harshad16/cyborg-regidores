@@ -7,6 +7,8 @@ name = "pypi"
 flask = "*"
 daiquiri = "*"
 kafka-python = "*"
+prometheus-flask-exporter = "*"
+prometheus-client = "*"
 
 [dev-packages]
 pylint = "*"

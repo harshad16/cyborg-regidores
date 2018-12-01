@@ -53,7 +53,7 @@ if __name__ == "__main__":
 
     # let's get all that we got...
     consumer = KafkaConsumer(
-        GITLAB_WEBHOOK_TOPIC_NAME,
+        GITHUB_WEBHOOK_TOPIC_NAME,
         bootstrap_servers=_KAFAK_BOOTSTRAP_SERVERS,
         value_deserializer=lambda v: json.loads(v),
         security_protocol="SSL",
