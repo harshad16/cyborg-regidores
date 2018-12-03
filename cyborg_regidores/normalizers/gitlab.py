@@ -35,29 +35,8 @@ _LOGGER = daiquiri.getLogger(__name__)
 _LOGGER.setLevel(logging.DEBUG if os.getenv("DEBUG", False) else logging.INFO)
 
 
-class GitHubNormalizer(Normalizer):
-    """The Normalizer is used to convert GitHub webhook events to a common format.
-    
-    A normalized Push Event looks like:
-    ```
-    {
-        "ref": "refs/heads/master",
-        "commits": [{
-            "id": "b6568db1bc1dcd7f8b4d5a946b0b91f9dacd7327",
-            "message": "Update Catalan translation to e38cb41.",
-            "timestamp": "2011-12-12T14:27:31+02:00",
-            "author": {
-                "name": "Jordi Mallach",
-                "email": "jordi@softcatala.org"
-            }
-        }],
-        "repository": {
-            "url": "http://example.com/mike/diaspora.git"
-        }
-    }
-    ```
-    
-    """
+class GitLabNormalizer(Normalizer):
+    """The Normalizer is used to convert GitLab webhook events to a common format."""
 
     bootstrap_servers = None
     from_topic = None
@@ -65,7 +44,7 @@ class GitHubNormalizer(Normalizer):
     producer = None
 
     def __init__(self, bootstrap_servers=None, from_topic: str = None, to_topic: str = None):
-        """Initialize the GitHub Normalizer."""
+        """Initialize the GitLab Normalizer."""
         if from_topic is None or to_topic is None or from_topic == "" or to_topic == "":
             _LOGGER.error("from_topic and to_topic must not be empty")
 
@@ -83,7 +62,7 @@ class GitHubNormalizer(Normalizer):
             group_id="github_normalizer",
         )
 
-        _LOGGER.debug("GitHubNormalizer from %r to %r initialized!", from_topic, to_topic)
+        _LOGGER.debug("GitLabNormalizer from %r to %r initialized!", from_topic, to_topic)
 
     def _publish(self, event: dict):
         """Publish the normalized event to a Kafka topic."""
@@ -119,19 +98,20 @@ class GitHubNormalizer(Normalizer):
         for msg in self.consumer:
             # TODO if we cant send to_topic or other error, the message from_topic should not be ack'd
             event = msg.value
+            event_type = event["object_kind"]
             normalized_event = None
 
-            _LOGGER.debug("GitHub Event %r", json.dumps(event))
+            _LOGGER.debug("GitLab Event %r", json.dumps(event))
 
-            if event["event_type"] == "push":
+            if event_type == "push":
                 normalized_event = {}
                 payload = event["payload"]
 
                 normalized_event["event_type"] = "push"
-                normalized_event["user_name"] = payload["pusher"]["name"]
+                normalized_event["user_name"] = payload["user_username"]
 
                 normalized_event["repository"] = {}
-                normalized_event["repository"]["url"] = event["payload"]["repository"]["html_url"]
+                normalized_event["repository"]["url"] = event["payload"]["repository"]["url"]
                 normalized_event["commits"] = []
 
                 for commit in event["payload"]["commits"]:
@@ -142,46 +122,44 @@ class GitHubNormalizer(Normalizer):
                     normalized_commit["author"] = commit["author"]
                     normalized_event["commits"].append(normalized_commit)
 
-                _LOGGER.debug("Normalized GitHub Push Event %r", json.dumps(normalized_event))
+                _LOGGER.debug("Normalized GitLab Push Event %r", json.dumps(normalized_event))
 
-            elif event["event_type"] == "pull_request":
+                self._publish(normalized_event)
+            elif event_type == "merge_request":
                 normalized_event = {}
                 payload = event["payload"]
 
                 normalized_event["event_type"] = "pull_request"
-                normalized_event["action"] = payload["action"]
-                normalized_event["user_name"] = payload["pull_request"]["user"]["login"]
+                normalized_event["action"] = payload["object_attributes"]["action"]
+                normalized_event["user_name"] = payload["user"]["username"]
 
                 normalized_event["repository"] = {}
-                normalized_event["repository"]["url"] = payload["repository"]["html_url"]
+                normalized_event["repository"]["url"] = payload["repository"]["url"]
 
                 normalized_event["pull_request"] = {}
-                normalized_event["pull_request"]["number"] = payload["pull_request"]["number"]
-                normalized_event["pull_request"]["url"] = payload["pull_request"]["html_url"]
+                normalized_event["pull_request"]["number"] = payload["object_attributes"]["id"]
+                normalized_event["pull_request"]["url"] = payload["object_attributes"]["url"]
 
-                _LOGGER.debug("Normalized GitHub Pull Request Event %r", json.dumps(normalized_event))
-
+                _LOGGER.debug("Normalized GitLab Pull Request Event %r", json.dumps(normalized_event))
             elif event["event_type"] == "issues":
                 normalized_event = {}
                 payload = event["payload"]
 
                 normalized_event["event_type"] = "issues"
-                normalized_event["action"] = payload["action"]
-                normalized_event["user_name"] = payload["issue"]["user"]["login"]
+                normalized_event["action"] = payload["object_attributes"]["action"]
+                normalized_event["user_name"] = payload["user"]["username"]
 
                 normalized_event["repository"] = {}
-                normalized_event["repository"]["url"] = payload["repository"]["html_url"]
+                normalized_event["repository"]["url"] = payload["repository"]["url"]
 
                 normalized_event["issue"] = {}
-                normalized_event["issue"]["number"] = payload["issue"]["number"]
-                normalized_event["issue"]["url"] = payload["issue"]["html_url"]
+                normalized_event["issue"]["number"] = payload["object_attributes"]["id"]
+                normalized_event["issue"]["url"] = payload["object_attributes"]["url"]
 
                 _LOGGER.debug("Normalized GitHub Issue Event %r", json.dumps(normalized_event))
 
             if normalized_event is not None:
                 self._publish(normalized_event)
-
-        # TODO what if consumer loses connection to Kafka?!
 
     def stop(self):
         """This will stop the filter thread."""

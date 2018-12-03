@@ -28,8 +28,9 @@ import kafka
 from kafka import KafkaConsumer
 
 from cyborg_regidores import __version__ as cyborg_regidores_version
-from cyborg_regidores.topic_names import GITHUB_WEBHOOK_TOPIC_NAME
+from cyborg_regidores.topic_names import GITHUB_WEBHOOK_TOPIC_NAME, GITLAB_WEBHOOK_TOPIC_NAME
 from cyborg_regidores.normalizers.github import GitHubNormalizer
+from cyborg_regidores.normalizers.gitlab import GitLabNormalizer
 
 
 DEBUG = os.getenv("DEBUG", True)
@@ -52,3 +53,10 @@ if __name__ == "__main__":
         to_topic="cyborg_regidores_events",
     )
     github_normalizer.filter()
+
+    gitlab_cee_normalizer = GitLabNormalizer(
+        bootstrap_servers=_KAFAK_BOOTSTRAP_SERVERS,
+        from_topic=GITLAB_WEBHOOK_TOPIC_NAME,
+        to_topic="cyborg_regidores_events",
+    )
+    gitlab_cee_normalizer.filter()
