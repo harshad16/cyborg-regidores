@@ -9,6 +9,7 @@ daiquiri = "*"
 kafka-python = "*"
 prometheus-flask-exporter = "*"
 prometheus-client = "*"
+faust = "*"
 
 [dev-packages]
 pylint = "*"
