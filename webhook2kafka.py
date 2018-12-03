@@ -91,6 +91,8 @@ def send_github_webhook_to_topic():
     payload = None
     status_code = HTTPStatus.OK
 
+    event_type = request.headers.get("X-GitHub-Event")
+
     signature = request.headers.get("X-Hub-Signature")
     sha, signature = signature.split("=")
 
@@ -106,6 +108,10 @@ def send_github_webhook_to_topic():
 
     if payload is None:
         _LOGGER.error("GitHub webhook payload was empty")
+        return resp, HTTPStatus.INTERNAL_SERVER_ERROR
+
+    if event_type is None or event_type == "":
+        _LOGGER.error("GitHub webhook event type was not provided")
         return resp, HTTPStatus.INTERNAL_SERVER_ERROR
 
     if producer is None:
@@ -126,7 +132,7 @@ def send_github_webhook_to_topic():
             return resp, HTTPStatus.INTERNAL_SERVER_ERROR
 
     try:
-        future = producer.send(GITHUB_WEBHOOK_TOPIC_NAME, payload)
+        future = producer.send(GITHUB_WEBHOOK_TOPIC_NAME, {"event_type": event_type, "payload": payload})
         result = future.get(timeout=6)
         _LOGGER.debug(result)
     except AttributeError as excptn:
