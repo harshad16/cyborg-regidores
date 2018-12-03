@@ -1,69 +1,139 @@
-apiVersion: apps.openshift.io/v1
-kind: DeploymentConfig
-metadata:
-  labels:
-    app: cyborg-regidores
-    component: webhook2kafka
-  name: webhook2kafka
-spec:
-  replicas: 1
-  revisionHistoryLimit: 4
-  selector:
-    app: cyborg-regidores
-    component: webhook2kafka
-    deploymentconfig: webhook2kafka
-  template:
+kind: List
+apiVersion: v1
+items:
+  - kind: DeploymentConfig
+    apiVersion: apps.openshift.io/v1
     metadata:
       labels:
         app: cyborg-regidores
         component: webhook2kafka
-        deploymentconfig: webhook2kafka
+      name: webhook2kafka
     spec:
-      containers:
-        - image: webhook2kafka
-          imagePullPolicy: Always
-          name: webhook2kafka
-          env:
-            - name: APP_FILE
-              value: webhook2kafka.py
-            - name: WEB_CONCURRENCY
-              value: '1'
-            - name: KAFKA_BOOTSTRAP_SERVERS
-              valueFrom:
-                secretKeyRef:
-                  name: cyborg-regidores
-                  key: kafka-bootstrap-servers
-          ports:
-            - containerPort: 8080
-              protocol: TCP
-          resources:
-            limits:
-              cpu: 500m
-              memory: 512Mi
-            requests:
-              cpu: 250m
-              memory: 128Mi
-          volumeMounts:
-            - mountPath: /opt/app-root/src/conf
-              name: root-ca-cert
-              readOnly: true
-      volumes:
-        - name: root-ca-cert
-          secret:
-            defaultMode: 420
-            items:
-              - key: root-ca-cert
-                path: ca.pem
-            secretName: cyborg-regidores
-  test: false
-  triggers:
-    - type: ConfigChange
-    - type: ImageChange
-      imageChangeParams:
-        automatic: true
-        containerNames:
-          - webhook2kafka
-        from:
-          kind: ImageStreamTag
-          name: webhook2kafka:latest
-      
+      replicas: 3
+      revisionHistoryLimit: 4
+      selector:
+        app: cyborg-regidores
+        component: webhook2kafka
+        deploymentconfig: webhook2kafka
+      template:
+        metadata:
+          labels:
+            app: cyborg-regidores
+            component: webhook2kafka
+            deploymentconfig: webhook2kafka
+        spec:
+          containers:
+            - image: webhook2kafka
+              imagePullPolicy: Always
+              name: webhook2kafka
+              env:
+                - name: APP_FILE
+                  value: webhook2kafka.py
+                - name: WEB_CONCURRENCY
+                  value: '1'
+                - name: KAFKA_BOOTSTRAP_SERVERS
+                  valueFrom:
+                    secretKeyRef:
+                      name: cyborg-regidores
+                      key: kafka-bootstrap-servers
+              ports:
+                - containerPort: 8080
+                  protocol: TCP
+              resources:
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+                requests:
+                  cpu: 250m
+                  memory: 128Mi
+              volumeMounts:
+                - mountPath: /opt/app-root/src/conf
+                  name: root-ca-cert
+                  readOnly: true
+          volumes:
+            - name: root-ca-cert
+              secret:
+                defaultMode: 420
+                items:
+                  - key: root-ca-cert
+                    path: ca.pem
+                secretName: cyborg-regidores
+      test: false
+      triggers:
+        - type: ConfigChange
+        - type: ImageChange
+          imageChangeParams:
+            automatic: true
+            containerNames:
+              - webhook2kafka
+            from:
+              kind: ImageStreamTag
+              name: webhook2kafka:latest
+  - kind: DeploymentConfig
+    apiVersion: apps.openshift.io/v1
+    metadata:
+      labels:
+        app: cyborg-regidores
+        component: normalizers
+      name: normalizers
+    spec:
+      replicas: 1
+      revisionHistoryLimit: 4
+      selector:
+        app: cyborg-regidores
+        component: normalizers
+        deploymentconfig: normalizers
+      template:
+        metadata:
+          labels:
+            app: cyborg-regidores
+            component: normalizers
+            deploymentconfig: normalizers
+        spec:
+          containers:
+            - image: normalizers
+              imagePullPolicy: Always
+              name: normalizers
+              env:
+                - name: APP_FILE
+                  value: normalizers.py
+                - name: WEB_CONCURRENCY
+                  value: '1'
+                - name: KAFKA_BOOTSTRAP_SERVERS
+                  valueFrom:
+                    secretKeyRef:
+                      name: cyborg-regidores
+                      key: kafka-bootstrap-servers
+              ports:
+                - containerPort: 8080
+                  protocol: TCP
+              resources:
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+                requests:
+                  cpu: 250m
+                  memory: 128Mi
+              volumeMounts:
+                - mountPath: /opt/app-root/src/conf
+                  name: root-ca-cert
+                  readOnly: true
+          volumes:
+            - name: root-ca-cert
+              secret:
+                defaultMode: 420
+                items:
+                  - key: root-ca-cert
+                    path: ca.pem
+                secretName: cyborg-regidores
+      test: false
+      triggers:
+        - type: ConfigChange
+        - type: ImageChange
+          imageChangeParams:
+            automatic: true
+            containerNames:
+              - normalizers
+            from:
+              kind: ImageStreamTag
+              name: normalizers:latest

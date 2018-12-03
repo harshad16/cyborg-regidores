@@ -80,7 +80,7 @@ class GitHubNormalizer(Normalizer):
             security_protocol="SSL",
             ssl_check_hostname=False,
             ssl_cafile="conf/ca.pem",
-            group_id=None,
+            group_id="github_normalizer",
         )
 
         _LOGGER.debug("GitHubNormalizer from %r to %r initialized!", from_topic, to_topic)
@@ -137,9 +137,9 @@ class GitHubNormalizer(Normalizer):
                     normalized_commit["author"] = commit["author"]
                     normalized_event["commits"].append(normalized_commit)
 
-            _LOGGER.debug("Normalized GitHub Push Event %r", json.dumps(normalized_event))
+                _LOGGER.debug("Normalized GitHub Push Event %r", json.dumps(normalized_event))
 
-            self._publish(normalized_event)
+                self._publish(normalized_event)
 
     def stop(self):
         """This will stop the filter thread."""
