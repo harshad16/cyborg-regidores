@@ -19,9 +19,19 @@
 """The Regidor promotes social participation and reforms community regulations."""
 
 
-GITHUB_WEBHOOK_TOPIC_NAME = "cyborg_regidores_github"
-GITLAB_WEBHOOK_TOPIC_NAME = "cyborg_regidores_gitlab"
-JIRA_WEBHOOK_TOPIC_NAME = "cyborg_regidores_jira"
-TRELLO_WEBHOOK_TOPIC_NAME = "cyborg_regidores_trello"
-GOOGLE_CHATBOT_TOPIC_NAME = "cyborg_regidores_hangout"
-NORMALIZED_EVENTS_TOPIC_NAME = "cyborg_regidores_events"
+import threading
+
+from abc import ABCMeta
+
+
+class Normalizer(metaclass=ABCMeta):
+    """The Normalizer is used to convert Events to a common format."""
+
+    pass
+
+
+def threaded(fn):
+    def wrapper(*args, **kwargs):
+        threading.Thread(target=fn, args=args, kwargs=kwargs).start()
+
+    return wrapper

@@ -16,7 +16,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-"""This will dump all the GitHub webhooks on a Kafka topic."""
+"""This will normalize all the Event on one Kafka topic."""
 
 import os
 import logging
@@ -28,14 +28,8 @@ import kafka
 from kafka import KafkaConsumer
 
 from cyborg_regidores import __version__ as cyborg_regidores_version
-from cyborg_regidores.topic_names import (
-    GITHUB_WEBHOOK_TOPIC_NAME,
-    GITLAB_WEBHOOK_TOPIC_NAME,
-    JIRA_WEBHOOK_TOPIC_NAME,
-    TRELLO_WEBHOOK_TOPIC_NAME,
-    GOOGLE_CHATBOT_TOPIC_NAME,
-    NORMALIZED_EVENTS_TOPIC_NAME,
-)
+from cyborg_regidores.topic_names import GITHUB_WEBHOOK_TOPIC_NAME
+from cyborg_regidores.normalizers.github import GitHubNormalizer
 
 
 DEBUG = os.getenv("DEBUG", True)
@@ -49,20 +43,12 @@ _KAFAK_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"
 
 
 if __name__ == "__main__":
-    _LOGGER.info(f"Cyborg Regidores dump v{cyborg_regidores_version}.")
+    _LOGGER.info(f"Cyborg Regidores Normalizers v{cyborg_regidores_version}.")
     _LOGGER.debug("DEBUG mode is enabled!")
 
-    # let's get all that we got...
-    consumer = KafkaConsumer(
-        NORMALIZED_EVENTS_TOPIC_NAME,
+    github_normalizer = GitHubNormalizer(
         bootstrap_servers=_KAFAK_BOOTSTRAP_SERVERS,
-        value_deserializer=lambda v: json.loads(v),
-        security_protocol="SSL",
-        ssl_check_hostname=False,
-        ssl_cafile="conf/ca.pem",
-        group_id=None,
-        auto_offset_reset="earliest",
+        from_topic=GITHUB_WEBHOOK_TOPIC_NAME,
+        to_topic="cyborg_regidores_events",
     )
-
-    for msg in consumer:
-        print(json.dumps(msg.value))
+    github_normalizer.filter()
