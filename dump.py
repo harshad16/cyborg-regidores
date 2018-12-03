@@ -22,7 +22,6 @@ import os
 import logging
 import json
 
-
 import daiquiri
 import kafka
 from kafka import KafkaConsumer
