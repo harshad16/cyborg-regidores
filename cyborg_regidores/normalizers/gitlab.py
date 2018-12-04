@@ -60,6 +60,7 @@ class GitLabNormalizer(Normalizer):
             ssl_check_hostname=False,
             ssl_cafile="conf/ca.pem",
             group_id="github_normalizer",
+            auto_offset_reset="earliest",
         )
 
         _LOGGER.debug("GitLabNormalizer from %r to %r initialized!", from_topic, to_topic)
@@ -110,8 +111,7 @@ class GitLabNormalizer(Normalizer):
                 normalized_event["event_type"] = "push"
                 normalized_event["user_name"] = payload["user_username"]
 
-                normalized_event["repository"] = {}
-                normalized_event["repository"]["url"] = event["payload"]["repository"]["url"]
+                normalized_event["repository_url"] = event["payload"]["repository"]["url"]
                 normalized_event["commits"] = []
 
                 for commit in event["payload"]["commits"]:
@@ -119,7 +119,7 @@ class GitLabNormalizer(Normalizer):
                     normalized_commit["id"] = commit["id"]
                     normalized_commit["message"] = commit["message"]
                     normalized_commit["timestamp"] = commit["timestamp"]
-                    normalized_commit["author"] = commit["author"]
+                    normalized_commit["author_email"] = commit["author"]["email"]
                     normalized_event["commits"].append(normalized_commit)
 
                 _LOGGER.debug("Normalized GitLab Push Event %r", json.dumps(normalized_event))
@@ -133,12 +133,11 @@ class GitLabNormalizer(Normalizer):
                 normalized_event["action"] = payload["object_attributes"]["action"]
                 normalized_event["user_name"] = payload["user"]["username"]
 
-                normalized_event["repository"] = {}
-                normalized_event["repository"]["url"] = payload["repository"]["url"]
+                normalized_event["created_at"] = payload["object_attributes"]["created_at"]
+                normalized_event["updated_at"] = payload["object_attributes"]["updated_at"]
 
-                normalized_event["pull_request"] = {}
-                normalized_event["pull_request"]["number"] = payload["object_attributes"]["id"]
-                normalized_event["pull_request"]["url"] = payload["object_attributes"]["url"]
+                normalized_event["repository_url"] = payload["repository"]["url"]
+                normalized_event["pull_request_url"] = payload["object_attributes"]["url"]
 
                 _LOGGER.debug("Normalized GitLab Pull Request Event %r", json.dumps(normalized_event))
             elif event["event_type"] == "issues":
@@ -149,12 +148,11 @@ class GitLabNormalizer(Normalizer):
                 normalized_event["action"] = payload["object_attributes"]["action"]
                 normalized_event["user_name"] = payload["user"]["username"]
 
-                normalized_event["repository"] = {}
-                normalized_event["repository"]["url"] = payload["repository"]["url"]
+                normalized_event["created_at"] = payload["object_attributes"]["created_at"]
+                normalized_event["updated_at"] = payload["object_attributes"]["updated_at"]
 
-                normalized_event["issue"] = {}
-                normalized_event["issue"]["number"] = payload["object_attributes"]["id"]
-                normalized_event["issue"]["url"] = payload["object_attributes"]["url"]
+                normalized_event["repository_url"] = payload["repository"]["url"]
+                normalized_event["issue_url"] = payload["object_attributes"]["url"]
 
                 _LOGGER.debug("Normalized GitHub Issue Event %r", json.dumps(normalized_event))
 

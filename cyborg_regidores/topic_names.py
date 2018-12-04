@@ -16,7 +16,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-"""The Regidor promotes social participation and reforms community regulations."""
+"""The Kafka Topic names used."""
 
 
 GITHUB_WEBHOOK_TOPIC_NAME = "cyborg_regidores_github"

@@ -16,5 +16,21 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-"""The Regidor promotes social participation and reforms community regulations."""
+"""The Faust Record types we are using."""
+
+
+from datetime import datetime
+
+import faust
+
+
+class SocialEvent(faust.Record, isodates=True, serializer="json"):
+    event_type: str
+    action: str
+    user_name: str
+    repository_url: str
+    pull_request_url: str = None
+    issue_url: str = None
+    created_at: datetime = None
+    updated_at: datetime = None
 
