@@ -34,6 +34,7 @@ from cyborg_regidores.topic_names import (
     TRELLO_WEBHOOK_TOPIC_NAME,
     GOOGLE_CHATBOT_TOPIC_NAME,
     NORMALIZED_EVENTS_TOPIC_NAME,
+    AICOE_ACTIVITY_TOPIC_NAME,
 )
 
 

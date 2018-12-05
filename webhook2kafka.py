@@ -42,12 +42,12 @@ from cyborg_regidores.topic_names import (
 )
 
 
-DEBUG = os.getenv("DEBUG", False)
+_DEBUG = os.getenv("DEBUG", False)
 
 
 daiquiri.setup()
 _LOGGER = daiquiri.getLogger("webhook2kafka")
-_LOGGER.setLevel(logging.DEBUG if DEBUG else logging.INFO)
+_LOGGER.setLevel(logging.DEBUG if _DEBUG else logging.INFO)
 
 _KAFAK_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 
@@ -162,6 +162,38 @@ def send_gitlab_webhook_to_topic():
         _LOGGER.error("GitLab webhook payload was empty")
         return resp, HTTPStatus.INTERNAL_SERVER_ERROR
 
+    event_type = payload["object_kind"]
+
+    status_code = _publish(GITLAB_WEBHOOK_TOPIC_NAME, {"event_type": event_type, "payload": payload})
+
+    return resp, status_code
+
+
+@app.route("/trello", methods=["POST"])
+def send_trello_webhook_to_topic():
+    """Entry point for trello webhook."""
+    global producer
+    resp = Response()
+    payload = None
+    status_code = HTTPStatus.OK
+
+    payload = request.json
+
+    if payload is None:
+        _LOGGER.error("Trello webhook payload was empty")
+        return resp, HTTPStatus.INTERNAL_SERVER_ERROR
+
+    event_type = "trello-stub"  # TODO payload["object_kind"]
+
+    status_code = _publish(GITLAB_WEBHOOK_TOPIC_NAME, {"event_type": event_type, "payload": payload})
+
+    return resp, status_code
+
+
+def _publish(topic: str, payload: dict) -> str:
+    """Publish the given dict to topic."""
+    global producer
+
     if producer is None:
         _LOGGER.debug("KafkaProducer was not connected, trying to reconnect...")
         try:
@@ -177,10 +209,10 @@ def send_gitlab_webhook_to_topic():
         except kafka.errors.NoBrokersAvailable as excptn:
             _LOGGER.debug("while trying to reconnect KafkaProducer: we failed...")
             _LOGGER.error(excptn)
-            return resp, HTTPStatus.INTERNAL_SERVER_ERROR
+            return HTTPStatus.INTERNAL_SERVER_ERROR
 
     try:
-        future = producer.send(GITLAB_WEBHOOK_TOPIC_NAME, payload)
+        future = producer.send(topic, payload)
         result = future.get(timeout=6)
         _LOGGER.debug(result)
     except AttributeError as excptn:
@@ -193,7 +225,7 @@ def send_gitlab_webhook_to_topic():
 
         status_code = HTTPStatus.INTERNAL_SERVER_ERROR
 
-    return resp, status_code
+    return status_code
 
 
 if __name__ == "__main__":
@@ -216,4 +248,4 @@ if __name__ == "__main__":
         _LOGGER.error(excptn)
 
     _LOGGER.info(f"running Flask application now...")
-    app.run(host="0.0.0.0", port=8080, debug=DEBUG)
+    app.run(host="0.0.0.0", port=8080, debug=_DEBUG)
