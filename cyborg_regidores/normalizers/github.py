@@ -28,7 +28,7 @@ import kafka
 from kafka import KafkaConsumer, KafkaProducer
 
 from .base import Normalizer, threaded
-from ..topic_names import NORMALIZED_EVENTS_TOPIC_NAME
+from ..topic_names import NORMALIZED_EVENTS_TOPIC_NAME, AICOE_ACTIVITY_TOPIC_NAME
 
 daiquiri.setup()
 _LOGGER = daiquiri.getLogger(__name__)
@@ -107,6 +107,7 @@ class GitHubNormalizer(Normalizer):
 
         try:
             self.producer.send(NORMALIZED_EVENTS_TOPIC_NAME, event)
+            self.producer.send(AICOE_ACTIVITY_TOPIC_NAME, event)
         except AttributeError as excptn:
             _LOGGER.debug(excptn)
         except (kafka.errors.NotLeaderForPartitionError, kafka.errors.KafkaTimeoutError) as excptn:
