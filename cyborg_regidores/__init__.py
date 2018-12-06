@@ -19,4 +19,4 @@
 """The Regidor promotes social participation and reforms community regulations."""
 
 
-__version__ = "0.2.0-dev"
+__version__ = "0.3.0-dev"

@@ -44,6 +44,7 @@ _LOGGER = daiquiri.getLogger("normalizers")
 _LOGGER.setLevel(logging.DEBUG if DEBUG else logging.INFO)
 
 _KAFAK_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
+_KAFKA_TOPIC_RETENTION_TIME_SECONDS = 60 * 60 * 24 * 45
 
 ssl_context = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH, cafile="conf/ca.pem")
 app = faust.App(
@@ -53,10 +54,10 @@ app = faust.App(
     ssl_context=ssl_context,
     web_enabled=False,
 )
-github_topic = app.topic(GITHUB_WEBHOOK_TOPIC_NAME)
-gitlab_topic = app.topic(GITLAB_WEBHOOK_TOPIC_NAME)
-trello_topic = app.topic(TRELLO_WEBHOOK_TOPIC_NAME)
-normalized_events_topic = app.topic(NORMALIZED_EVENTS_TOPIC_NAME)
+github_topic = app.topic(GITHUB_WEBHOOK_TOPIC_NAME, retention=_KAFKA_TOPIC_RETENTION_TIME_SECONDS)
+gitlab_topic = app.topic(GITLAB_WEBHOOK_TOPIC_NAME, retention=_KAFKA_TOPIC_RETENTION_TIME_SECONDS)
+trello_topic = app.topic(TRELLO_WEBHOOK_TOPIC_NAME, retention=_KAFKA_TOPIC_RETENTION_TIME_SECONDS)
+normalized_events_topic = app.topic(NORMALIZED_EVENTS_TOPIC_NAME, retention=_KAFKA_TOPIC_RETENTION_TIME_SECONDS)
 
 
 @app.agent(github_topic, sink=[normalized_events_topic])

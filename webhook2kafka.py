@@ -39,6 +39,7 @@ from cyborg_regidores.topic_names import (
     JIRA_WEBHOOK_TOPIC_NAME,
     TRELLO_WEBHOOK_TOPIC_NAME,
     GOOGLE_CHATBOT_TOPIC_NAME,
+    AICOE_ACTIVITY_TOPIC_NAME,
 )
 
 
@@ -55,8 +56,6 @@ _KAFAK_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"
 app = Flask(__name__)
 metrics = PrometheusMetrics(app)
 metrics.info("cyborg_regidores_webhook2kafka_info", "Cyborg Regidores webhook2kafka", version=cyborg_regidores_version)
-
-producer = None
 
 
 @app.after_request
@@ -76,17 +75,12 @@ def healthz():
     status_code = HTTPStatus.OK
     health = {"version": cyborg_regidores_version}
 
-    if producer is None:
-        status_code = HTTPStatus.SERVICE_UNAVAILABLE
-        health["status"] = {"kafka": "NoBrokersAvailable"}
-
     return make_response(jsonify(health), status_code)
 
 
 @app.route("/github", methods=["POST"])
 def send_github_webhook_to_topic():
     """Entry point for github webhook."""
-    global producer
     resp = Response()
     payload = None
     status_code = HTTPStatus.OK
@@ -114,36 +108,8 @@ def send_github_webhook_to_topic():
         _LOGGER.error("GitHub webhook event type was not provided")
         return resp, HTTPStatus.INTERNAL_SERVER_ERROR
 
-    if producer is None:
-        _LOGGER.debug("KafkaProducer was not connected, trying to reconnect...")
-        try:
-            producer = KafkaProducer(
-                bootstrap_servers=_KAFAK_BOOTSTRAP_SERVERS,
-                acks=1,  # Wait for leader to write the record to its local log only.
-                compression_type="gzip",
-                value_serializer=lambda v: json.dumps(v).encode("utf-8"),
-                security_protocol="SSL",
-                ssl_check_hostname=False,
-                ssl_cafile="conf/ca.pem",
-            )
-        except kafka.errors.NoBrokersAvailable as excptn:
-            _LOGGER.debug("while trying to reconnect KafkaProducer: we failed...")
-            _LOGGER.error(excptn)
-            return resp, HTTPStatus.INTERNAL_SERVER_ERROR
-
-    try:
-        future = producer.send(GITHUB_WEBHOOK_TOPIC_NAME, {"event_type": event_type, "payload": payload})
-        result = future.get(timeout=6)
-        _LOGGER.debug(result)
-    except AttributeError as excptn:
-        _LOGGER.debug(excptn)
-        status_code = HTTPStatus.INTERNAL_SERVER_ERROR
-    except (kafka.errors.NotLeaderForPartitionError, kafka.errors.KafkaTimeoutError) as excptn:
-        _LOGGER.error(excptn)
-        producer.close()
-        producer = None
-
-        status_code = HTTPStatus.INTERNAL_SERVER_ERROR
+    _publish(AICOE_ACTIVITY_TOPIC_NAME, {"event_type": event_type, "payload": payload})
+    status_code = _publish(GITLAB_WEBHOOK_TOPIC_NAME, {"event_type": event_type, "payload": payload})
 
     return resp, status_code
 
@@ -151,7 +117,6 @@ def send_github_webhook_to_topic():
 @app.route("/gitlab", methods=["POST"])
 def send_gitlab_webhook_to_topic():
     """Entry point for gitlab webhook."""
-    global producer
     resp = Response()
     payload = None
     status_code = HTTPStatus.OK
@@ -164,6 +129,7 @@ def send_gitlab_webhook_to_topic():
 
     event_type = payload["object_kind"]
 
+    _publish(AICOE_ACTIVITY_TOPIC_NAME, {"event_type": event_type, "payload": payload})
     status_code = _publish(GITLAB_WEBHOOK_TOPIC_NAME, {"event_type": event_type, "payload": payload})
 
     return resp, status_code
@@ -172,7 +138,6 @@ def send_gitlab_webhook_to_topic():
 @app.route("/trello", methods=["POST"])
 def send_trello_webhook_to_topic():
     """Entry point for trello webhook."""
-    global producer
     resp = Response()
     payload = None
     status_code = HTTPStatus.OK
@@ -185,6 +150,7 @@ def send_trello_webhook_to_topic():
 
     event_type = "trello-stub"  # TODO payload["object_kind"]
 
+    _publish(AICOE_ACTIVITY_TOPIC_NAME, {"event_type": event_type, "payload": payload})
     status_code = _publish(GITLAB_WEBHOOK_TOPIC_NAME, {"event_type": event_type, "payload": payload})
 
     return resp, status_code
@@ -192,7 +158,7 @@ def send_trello_webhook_to_topic():
 
 def _publish(topic: str, payload: dict) -> str:
     """Publish the given dict to topic."""
-    global producer
+    producer = None
 
     if producer is None:
         _LOGGER.debug("KafkaProducer was not connected, trying to reconnect...")
@@ -233,19 +199,6 @@ if __name__ == "__main__":
     _LOGGER.debug("DEBUG mode is enabled!")
 
     app.config["GITHUB_WEBHOOK_SECRET"] = os.environ.get("GITHUB_WEBHOOK_SECRET")
-
-    try:
-        producer = KafkaProducer(
-            bootstrap_servers=_KAFAK_BOOTSTRAP_SERVERS,
-            acks=1,  # Wait for leader to write the record to its local log only.
-            compression_type="gzip",
-            value_serializer=lambda v: json.dumps(v).encode("utf-8"),
-            security_protocol="SSL",
-            ssl_check_hostname=False,
-            ssl_cafile="conf/ca.pem",
-        )
-    except kafka.errors.NoBrokersAvailable as excptn:
-        _LOGGER.error(excptn)
 
     _LOGGER.info(f"running Flask application now...")
     app.run(host="0.0.0.0", port=8080, debug=_DEBUG)
