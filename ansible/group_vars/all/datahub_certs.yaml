@@ -1,0 +1,2 @@
+datahub_ca_cert: "{{ vault_datahub_ca_cert }}"
+
