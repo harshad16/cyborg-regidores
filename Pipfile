@@ -10,6 +10,7 @@ kafka-python = "*"
 prometheus-flask-exporter = "*"
 prometheus-client = "*"
 faust = "*"
+py-stackexchange = "*"
 
 [dev-packages]
 pylint = "*"

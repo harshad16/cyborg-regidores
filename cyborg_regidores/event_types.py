@@ -27,8 +27,8 @@ import faust
 class SocialEvent(faust.Record, isodates=True, serializer="json"):
     event_type: str
     action: str = None
-    user_name: str
-    repository_url: str
+    user_name: str = None
+    repository_url: str = None
     pull_request_url: str = None
     issue_url: str = None
     created_at: datetime = None

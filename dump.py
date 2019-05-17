@@ -51,18 +51,33 @@ _KAFAK_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"
 if __name__ == "__main__":
     _LOGGER.info(f"Cyborg Regidores dump v{cyborg_regidores_version}.")
     _LOGGER.debug("DEBUG mode is enabled!")
+    _LOGGER.debug(f"using Kafka bootstrap servers: {_KAFAK_BOOTSTRAP_SERVERS}")
 
     # let's get all that we got...
     consumer = KafkaConsumer(
-        NORMALIZED_EVENTS_TOPIC_NAME,
+        AICOE_ACTIVITY_TOPIC_NAME,
         bootstrap_servers=_KAFAK_BOOTSTRAP_SERVERS,
         value_deserializer=lambda v: json.loads(v),
         security_protocol="SSL",
-        ssl_check_hostname=False,
-        ssl_cafile="conf/ca.pem",
-        group_id=None,
+        ssl_cafile="secrets/data-hub-kafka-ca.crt",
+        group_id="webhook2kafka",
         auto_offset_reset="earliest",
+        api_version_auto_timeout_ms=30000,
     )
 
+    print(f'Subscribed to "{_KAFAK_BOOTSTRAP_SERVERS}" on topic "{AICOE_ACTIVITY_TOPIC_NAME}"...')
+
+    try:
+        for record in consumer:
+            msg = record.value
+            topic = record.topic
+            print(f"Received the following message: {msg}")
+    except KeyboardInterrupt:
+        pass
+    finally:
+        _LOGGER.debug("Closing KafkaConsumer...")
+        consumer.close()
+    print("Done.")
+
     for msg in consumer:
-        print(json.dumps(msg.value))
+        _LOGGER.debug(json.dumps(msg.value))

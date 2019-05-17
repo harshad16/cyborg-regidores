@@ -19,10 +19,10 @@
 """The Kafka Topic names used."""
 
 
-GITHUB_WEBHOOK_TOPIC_NAME = "cyborg_regidores_github"
-GITLAB_WEBHOOK_TOPIC_NAME = "cyborg_regidores_gitlab"
-JIRA_WEBHOOK_TOPIC_NAME = "cyborg_regidores_jira"
-TRELLO_WEBHOOK_TOPIC_NAME = "cyborg_regidores_trello"
-GOOGLE_CHATBOT_TOPIC_NAME = "cyborg_regidores_hangout"
-NORMALIZED_EVENTS_TOPIC_NAME = "cyborg_regidores_events"
-AICOE_ACTIVITY_TOPIC_NAME = "aicoeactivity.ingest.prod"
+GITHUB_WEBHOOK_TOPIC_NAME = "dynamic-cyborg-regidores-github-ingest-prod"
+GITLAB_WEBHOOK_TOPIC_NAME = "dynamic-cyborg-regidoresgitlab-ingest-prod"
+JIRA_WEBHOOK_TOPIC_NAME = "dynamic-cyborg-regidoresjira-ingest-prod"
+TRELLO_WEBHOOK_TOPIC_NAME = "dynamic-cyborg-regidorestrello-ingest-prod"
+GOOGLE_CHATBOT_TOPIC_NAME = "dynamic-cyborg-regidoreshangout-ingest-prod"
+NORMALIZED_EVENTS_TOPIC_NAME = "dynamic-cyborg-regidoresevents-ingest-prod"
+AICOE_ACTIVITY_TOPIC_NAME = "dynamic-aicoeactivity-ingest-prod"

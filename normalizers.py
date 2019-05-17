@@ -46,7 +46,7 @@ _LOGGER.setLevel(logging.DEBUG if DEBUG else logging.INFO)
 _KAFAK_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 _KAFKA_TOPIC_RETENTION_TIME_SECONDS = 60 * 60 * 24 * 45
 
-ssl_context = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH, cafile="conf/ca.pem")
+ssl_context = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH, cafile="secrets/data-hub-kafka-ca.crt")
 app = faust.App(
     "cyborg_regidores_normalizers",
     broker=_KAFAK_BOOTSTRAP_SERVERS,

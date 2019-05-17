@@ -159,6 +159,7 @@ def send_trello_webhook_to_topic():
 def _publish(topic: str, payload: dict) -> str:
     """Publish the given dict to topic."""
     producer = None
+    status_code = HTTPStatus.OK
 
     if producer is None:
         _LOGGER.debug("KafkaProducer was not connected, trying to reconnect...")
@@ -169,8 +170,7 @@ def _publish(topic: str, payload: dict) -> str:
                 compression_type="gzip",
                 value_serializer=lambda v: json.dumps(v).encode("utf-8"),
                 security_protocol="SSL",
-                ssl_check_hostname=False,
-                ssl_cafile="conf/ca.pem",
+                ssl_cafile="secrets/data-hub-kafka-ca.crt",
             )
         except kafka.errors.NoBrokersAvailable as excptn:
             _LOGGER.debug("while trying to reconnect KafkaProducer: we failed...")
