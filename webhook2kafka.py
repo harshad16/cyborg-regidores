@@ -109,7 +109,7 @@ def send_github_webhook_to_topic():
         return resp, HTTPStatus.INTERNAL_SERVER_ERROR
 
     _publish(AICOE_ACTIVITY_TOPIC_NAME, {"event_type": event_type, "payload": payload})
-    status_code = _publish(GITLAB_WEBHOOK_TOPIC_NAME, {"event_type": event_type, "payload": payload})
+    status_code = _publish(GITHUB_WEBHOOK_TOPIC_NAME, {"event_type": event_type, "payload": payload})
 
     return resp, status_code
 
@@ -151,7 +151,7 @@ def send_trello_webhook_to_topic():
     event_type = "trello-stub"  # TODO payload["object_kind"]
 
     _publish(AICOE_ACTIVITY_TOPIC_NAME, {"event_type": event_type, "payload": payload})
-    status_code = _publish(GITLAB_WEBHOOK_TOPIC_NAME, {"event_type": event_type, "payload": payload})
+    status_code = _publish(TRELLO_WEBHOOK_TOPIC_NAME, {"event_type": event_type, "payload": payload})
 
     return resp, status_code
 
