@@ -166,7 +166,7 @@ def _publish(topic: str, payload: dict) -> str:
         try:
             producer = KafkaProducer(
                 bootstrap_servers=_KAFAK_BOOTSTRAP_SERVERS,
-                acks=1,  # Wait for leader to write the record to its local log only.
+                acks=1,
                 compression_type="gzip",
                 value_serializer=lambda v: json.dumps(v).encode("utf-8"),
                 security_protocol="SSL",
@@ -176,6 +176,7 @@ def _publish(topic: str, payload: dict) -> str:
             _LOGGER.debug("while trying to reconnect KafkaProducer: we failed...")
             _LOGGER.error(excptn)
             return HTTPStatus.INTERNAL_SERVER_ERROR
+        # acks=1: Wait for leader to write the record to its local log only.
 
     try:
         future = producer.send(topic, payload)
