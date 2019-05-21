@@ -166,11 +166,11 @@ def _publish(topic: str, payload: dict) -> str:
         try:
             producer = KafkaProducer(
                 bootstrap_servers=_KAFAK_BOOTSTRAP_SERVERS,
-                acks=1,  # Wait for leader to write the record to its local log only.
+                acks=1,
                 compression_type="gzip",
                 value_serializer=lambda v: json.dumps(v).encode("utf-8"),
                 security_protocol="SSL",
-                ssl_cafile="secrets/data-hub-kafka-ca.crt",
+                ssl_cafile="secrets/data-hub-kafka-ca.crt"
             )
         except kafka.errors.NoBrokersAvailable as excptn:
             _LOGGER.debug("while trying to reconnect KafkaProducer: we failed...")
